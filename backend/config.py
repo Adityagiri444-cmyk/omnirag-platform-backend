@@ -1,0 +1,3 @@
+SECRET_KEY = "omnirag-secret-key-aditya-giri-2026"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30

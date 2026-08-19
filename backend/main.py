@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from database import engine
 import models
-from routers import auth
+from routers import auth, users          # ← CHANGED: added ", users"
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -13,6 +13,7 @@ app = FastAPI(
 
 # Include routers
 app.include_router(auth.router)
+app.include_router(users.router)          # ← NEW LINE: added this
 
 @app.get("/")
 def home():

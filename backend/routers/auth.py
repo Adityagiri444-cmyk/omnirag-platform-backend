@@ -6,16 +6,13 @@ from schemas import UserCreate, UserLogin, UserResponse, Token
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
+from dependencies import get_current_user
+from config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# JWT settings
-SECRET_KEY = "omnirag-secret-key-aditya-giri-2026"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # Helper functions
 def hash_password(password: str):
@@ -71,3 +68,8 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     # Create and return token
     token = create_access_token({"sub": db_user.email, "role": db_user.role})
     return {"access_token": token, "token_type": "bearer"}
+
+# Get current logged-in user
+@router.get("/me", response_model=UserResponse)
+def get_me(current_user: User = Depends(get_current_user)):
+    return current_user
