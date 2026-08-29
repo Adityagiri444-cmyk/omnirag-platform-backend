@@ -24,7 +24,12 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# Schema for JWT token response
+# Schema for JWT token response — now includes refresh_token too
 class Token(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str
+
+# Schema for requesting a new access token using a refresh token
+class RefreshRequest(BaseModel):
+    refresh_token: str
