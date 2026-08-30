@@ -1,7 +1,8 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from database import engine
 import models
-from routers import auth, users          # ← CHANGED: added ", users"
+from routers import auth, users
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -11,9 +12,18 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Allow the React frontend (running on a different port) to call this API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Include routers
 app.include_router(auth.router)
-app.include_router(users.router)          # ← NEW LINE: added this
+app.include_router(users.router)
 
 @app.get("/")
 def home():
