@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
+from datetime import datetime
 
 # Schema for registering a new user
 class UserCreate(BaseModel):
@@ -33,3 +34,13 @@ class Token(BaseModel):
 # Schema for requesting a new access token using a refresh token
 class RefreshRequest(BaseModel):
     refresh_token: str
+
+# Schema for document response - what we send back after upload/listing
+class DocumentResponse(BaseModel):
+    id: int
+    filename: str
+    uploaded_at: datetime
+    owner_id: int
+
+    class Config:
+        from_attributes = True
