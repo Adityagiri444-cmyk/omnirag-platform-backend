@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Login from './Login';
 import Documents from './Documents';
+import Analytics from './Analytics';
 import './App.css';
 
 function App() {
@@ -25,15 +26,22 @@ function App() {
   }
 
   return (
-    <div className="App">
-      <div style={{ textAlign: 'center', paddingTop: '30px' }}>
-        <h2>Welcome to the OmniRAG Dashboard</h2>
-        <p>You are logged in.</p>
-        <button onClick={handleLogout} style={{ padding: '8px 16px', cursor: 'pointer' }}>
+    <div className="min-h-screen bg-gray-100">
+      <div className="bg-white shadow-sm py-6 px-4 text-center">
+        <h2 className="text-2xl font-bold text-gray-800">Welcome to the OmniRAG Dashboard</h2>
+        <p className="text-gray-500 mt-1">You are logged in.</p>
+        <button
+          onClick={handleLogout}
+          className="mt-4 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+        >
           Logout
         </button>
       </div>
-      <Documents />
+
+      <div className="max-w-3xl mx-auto py-8 px-4 space-y-8">
+        <Analytics />
+        <Documents />
+      </div>
     </div>
   );
 }

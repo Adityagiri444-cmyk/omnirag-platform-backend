@@ -1,7 +1,9 @@
 import os
 import shutil
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List
 from database import get_db
 from models import User, Document
@@ -53,6 +55,51 @@ def list_documents(
     if current_user.role == "admin":
         return db.query(Document).all()
     return db.query(Document).filter(Document.owner_id == current_user.id).all()
+
+# Analytics — document counts and upload activity for charts
+@router.get("/stats")
+def get_document_stats(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Base query — admin sees stats across all users, regular user sees only their own
+    base_query = db.query(Document)
+    if current_user.role != "admin":
+        base_query = base_query.filter(Document.owner_id == current_user.id)
+
+    total_documents = base_query.count()
+
+    # Documents uploaded per day, over the last 7 days
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    daily_counts = (
+        base_query
+        .filter(Document.uploaded_at >= seven_days_ago)
+        .with_entities(
+            func.date(Document.uploaded_at).label("date"),
+            func.count(Document.id).label("count")
+        )
+        .group_by(func.date(Document.uploaded_at))
+        .order_by(func.date(Document.uploaded_at))
+        .all()
+    )
+    upload_history = [{"date": str(row.date), "count": row.count} for row in daily_counts]
+
+    # Documents per user — admin only, since regular users only have their own anyway
+    documents_per_user = []
+    if current_user.role == "admin":
+        per_user = (
+            db.query(User.full_name, func.count(Document.id).label("count"))
+            .join(Document, Document.owner_id == User.id)
+            .group_by(User.full_name)
+            .all()
+        )
+        documents_per_user = [{"user": row.full_name, "count": row.count} for row in per_user]
+
+    return {
+        "total_documents": total_documents,
+        "upload_history": upload_history,
+        "documents_per_user": documents_per_user,
+    }
 
 # Delete a document — only the owner or an admin can delete it
 @router.delete("/{document_id}")
