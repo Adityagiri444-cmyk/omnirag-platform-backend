@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Login from './Login';
 import Documents from './Documents';
+import Query from './Query';
 import Analytics from './Analytics';
 import './App.css';
 
@@ -39,6 +40,7 @@ function App() {
       </div>
 
       <div className="max-w-3xl mx-auto py-8 px-4 space-y-8">
+                <Query />
         <Analytics />
         <Documents />
       </div>

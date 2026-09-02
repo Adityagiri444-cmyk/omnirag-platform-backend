@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { authFetch } from "./api";
 
 function Documents() {
   const [documents, setDocuments] = useState([]);
@@ -7,13 +8,9 @@ function Documents() {
   const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const token = localStorage.getItem("access_token");
-
   const fetchDocuments = async () => {
     try {
-      const response = await fetch("http://localhost:8000/documents/", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await authFetch("http://localhost:8000/documents/");
       const data = await response.json();
       setDocuments(data);
     } catch (err) {
@@ -37,9 +34,8 @@ function Documents() {
     formData.append("file", file);
 
     try {
-      const response = await fetch("http://localhost:8000/documents/upload", {
+      const response = await authFetch("http://localhost:8000/documents/upload", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 
@@ -59,9 +55,8 @@ function Documents() {
 
   const handleDelete = async (id) => {
     try {
-      const response = await fetch(`http://localhost:8000/documents/${id}`, {
+      const response = await authFetch(`http://localhost:8000/documents/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) {

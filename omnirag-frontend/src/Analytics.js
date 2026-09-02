@@ -1,18 +1,15 @@
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
+import { authFetch } from "./api";
 
 function Analytics() {
   const [stats, setStats] = useState(null);
   const [error, setError] = useState("");
 
-  const token = localStorage.getItem("access_token");
-
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch("http://localhost:8000/documents/stats", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await authFetch("http://localhost:8000/documents/stats");
         if (!response.ok) throw new Error("Failed to load stats");
         const data = await response.json();
         setStats(data);
