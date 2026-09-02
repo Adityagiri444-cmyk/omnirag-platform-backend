@@ -4,3 +4,4 @@ __pycache__/
 *.db
 .env
 omnirag-platform/
+chroma_db/
