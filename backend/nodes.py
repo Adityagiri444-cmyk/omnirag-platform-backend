@@ -9,6 +9,21 @@ from retriever import retrieve
 model = ChatGroq(model="openai/gpt-oss-20b")
 parser = StrOutputParser()
 
+planner_prompt = PromptTemplate.from_template(
+    "You are a query planning agent for a document retrieval system. "
+    "Given a user's question, rewrite it into the clearest, most specific search query "
+    "that will retrieve the most relevant document passages. "
+    "If the question has multiple parts, focus on the core information need. "
+    "Reply with ONLY the rewritten search query, nothing else.\n\n"
+    "User question: {query}\n\n"
+    "Search query:"
+)
+planner_chain = planner_prompt | model | parser
+
+def node_planner(state: dict) -> dict:
+    search_query = planner_chain.invoke({"query": state["query"]}).strip()
+    return {"search_query": search_query}
+
 summarizer_prompt = PromptTemplate.from_template(
     "Answer the question using only the context below. "
     "If the context doesn't contain the answer, say so.\n\n"
@@ -24,7 +39,8 @@ def node_summarizer(state: dict) -> dict:
     return {"final_answer": answer}
 
 def node_retrieval(state: dict) -> dict:
-    docs = retrieve(state["query"], k=3)
+    query_to_use = state.get("search_query", state["query"])
+    docs = retrieve(query_to_use, k=3)
     return {"retrieved_docs": docs}
 
 evaluator_prompt = PromptTemplate.from_template(
@@ -53,9 +69,11 @@ def route_after_evaluator(state: dict) -> str:
 
 if __name__ == "__main__":
     test_state = {"query": "What is RAG?", "attempts": 0}
+    test_state.update(node_planner(test_state))
     test_state.update(node_retrieval(test_state))
     test_state.update(node_summarizer(test_state))
     test_state.update(node_evaluator(test_state))
-    print("Final Answer:\n", test_state["final_answer"])
+    print("Search Query:", test_state["search_query"])
+    print("\nFinal Answer:\n", test_state["final_answer"])
     print("\nEvaluation:", test_state["evaluation"])
     print("Route decision:", route_after_evaluator(test_state))
