@@ -9,6 +9,7 @@ from database import get_db
 from models import User, Document
 from schemas import DocumentResponse
 from dependencies import get_current_user
+from retriever import add_document_to_index
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
@@ -34,6 +35,12 @@ def upload_document(
 
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
+
+    # Index the document into the vector store so retrieval can find it
+    try:
+        add_document_to_index(file_path, file.filename)
+    except Exception as e:
+        print(f"Warning: failed to index {file.filename}: {e}")
 
     # Save metadata to the database
     new_document = Document(
