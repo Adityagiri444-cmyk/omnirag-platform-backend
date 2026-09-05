@@ -48,6 +48,7 @@ function Query() {
                 text: data.answer,
                 evaluation: data.evaluation,
                 attempts: data.attempts,
+                taskId: taskId,
               },
             ]);
           }
@@ -94,6 +95,25 @@ function Query() {
     }
   };
 
+  const handleDownloadReport = async (taskId) => {
+    try {
+      const response = await authFetch(`http://localhost:8000/query/report/${taskId}`);
+      if (!response.ok) throw new Error("Failed to generate report");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `omnirag_report_${taskId.slice(0, 8)}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert("Could not download report: " + err.message);
+    }
+  };
+
   const getStepStatus = (step) => {
     if (completedSteps.includes(step)) return "done";
     if (currentStep === step) return "active";
@@ -134,9 +154,19 @@ function Query() {
             <div key={i} className="flex justify-start">
               <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 max-w-[80%]">
                 <p className="text-gray-800">{msg.text}</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Evaluation: {msg.evaluation} · Attempts: {msg.attempts}
-                </p>
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-xs text-gray-400">
+                    Evaluation: {msg.evaluation} · Attempts: {msg.attempts}
+                  </p>
+                  {msg.taskId && (
+                    <button
+                      onClick={() => handleDownloadReport(msg.taskId)}
+                      className="text-xs text-blue-500 hover:underline ml-3 whitespace-nowrap"
+                    >
+                      Download Report
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );

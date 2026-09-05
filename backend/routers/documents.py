@@ -10,6 +10,7 @@ from models import User, Document
 from schemas import DocumentResponse
 from dependencies import get_current_user
 from retriever import add_document_to_index
+from nodes import summarize_document
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
@@ -133,3 +134,22 @@ def delete_document(
     db.delete(document)
     db.commit()
     return {"detail": "Document deleted successfully"}
+@router.get("/{document_id}/summary")
+def get_document_summary(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    document = db.query(Document).filter(Document.id == document_id).first()
+
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if document.owner_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to view this document"
+        )
+
+    summary = summarize_document(document.filename)
+    return {"filename": document.filename, "summary": summary}

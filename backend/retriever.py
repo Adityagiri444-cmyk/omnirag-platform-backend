@@ -27,6 +27,12 @@ def add_document_to_index(filepath: str, filename: str):
     vectorstore.add_documents(chunks)
     return len(chunks)
 
+def get_document_text(filename: str) -> str:
+    """Fetch all indexed chunks for a specific document and join them back together."""
+    results = vectorstore._collection.get(where={"source": filename})
+    documents = results.get("documents", [])
+    return "\n\n".join(documents)
+
 if __name__ == "__main__":
     test_query = "What is RAG?"
     chunks = retrieve(test_query)

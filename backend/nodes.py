@@ -5,6 +5,7 @@ from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from retriever import retrieve
+from retriever import retrieve, get_document_text
 
 model = ChatGroq(model="openai/gpt-oss-20b")
 parser = StrOutputParser()
@@ -66,6 +67,21 @@ def route_after_evaluator(state: dict) -> str:
     if state["evaluation"] == "YES" or state["attempts"] >= 2:
         return "done"
     return "retry"
+
+summary_prompt = PromptTemplate.from_template(
+    "Summarize the following document in one clear, well-written paragraph. "
+    "Cover the main topic and the most important points.\n\n"
+    "Document:\n{text}\n\n"
+    "Summary:"
+)
+summary_chain = summary_prompt | model | parser
+
+def summarize_document(filename: str) -> str:
+    text = get_document_text(filename)
+    if not text:
+        return "No content found for this document."
+    text = text[:6000]  # keep within model context limits
+    return summary_chain.invoke({"text": text})
 
 if __name__ == "__main__":
     test_state = {"query": "What is RAG?", "attempts": 0}

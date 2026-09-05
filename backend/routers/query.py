@@ -1,9 +1,11 @@
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from models import User
 from dependencies import get_current_user
 from graph import graph
+from report_generator import generate_query_report
 
 router = APIRouter(prefix="/query", tags=["Query"])
 
@@ -23,6 +25,9 @@ def run_graph_task(task_id: str, question: str):
         "current_step": "starting",
         "completed_steps": [],
         "done": False,
+        "question": question,
+        "search_query": None,
+        "retrieved_docs": None,
         "answer": None,
         "evaluation": None,
         "attempts": None,
@@ -39,6 +44,8 @@ def run_graph_task(task_id: str, question: str):
 
         task_status[task_id]["done"] = True
         task_status[task_id]["current_step"] = None
+        task_status[task_id]["search_query"] = state.get("search_query")
+        task_status[task_id]["retrieved_docs"] = state.get("retrieved_docs")
         task_status[task_id]["answer"] = state.get("final_answer")
         task_status[task_id]["evaluation"] = state.get("evaluation")
         task_status[task_id]["attempts"] = state.get("attempts")
@@ -77,3 +84,23 @@ def get_query_status(
     if not status:
         raise HTTPException(status_code=404, detail="Task not found")
     return status
+
+@router.get("/report/{task_id}")
+def download_report(
+    task_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    status = task_status.get(task_id)
+    if not status:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if not status.get("done"):
+        raise HTTPException(status_code=400, detail="Query still in progress")
+    if status.get("error"):
+        raise HTTPException(status_code=400, detail="Cannot generate report for a failed query")
+
+    pdf_buffer = generate_query_report(status)
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=omnirag_report_{task_id[:8]}.pdf"}
+    )

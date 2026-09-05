@@ -7,6 +7,8 @@ function Documents() {
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [summaries, setSummaries] = useState({});
+  const [summarizing, setSummarizing] = useState({});
 
   const fetchDocuments = async () => {
     try {
@@ -70,6 +72,20 @@ function Documents() {
     }
   };
 
+  const handleSummarize = async (id) => {
+    setSummarizing((prev) => ({ ...prev, [id]: true }));
+    try {
+      const response = await authFetch(`http://localhost:8000/documents/${id}/summary`);
+      if (!response.ok) throw new Error("Failed to generate summary");
+      const data = await response.json();
+      setSummaries((prev) => ({ ...prev, [id]: data.summary }));
+    } catch (err) {
+      setSummaries((prev) => ({ ...prev, [id]: "Failed to generate summary." }));
+    } finally {
+      setSummarizing((prev) => ({ ...prev, [id]: false }));
+    }
+  };
+
   // Filter documents by filename, case-insensitive
   const filteredDocuments = documents.filter((doc) =>
     doc.filename.toLowerCase().includes(searchTerm.toLowerCase())
@@ -107,14 +123,30 @@ function Documents() {
 
       <ul className="divide-y divide-gray-200">
         {filteredDocuments.map((doc) => (
-          <li key={doc.id} className="flex items-center justify-between py-3">
-            <span className="text-gray-700">{doc.filename}</span>
-            <button
-              onClick={() => handleDelete(doc.id)}
-              className="px-3 py-1 text-sm bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors"
-            >
-              Delete
-            </button>
+          <li key={doc.id} className="py-3">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-700">{doc.filename}</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleSummarize(doc.id)}
+                  disabled={summarizing[doc.id]}
+                  className="px-3 py-1 text-sm bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors disabled:opacity-50"
+                >
+                  {summarizing[doc.id] ? "Summarizing..." : "Summarize"}
+                </button>
+                <button
+                  onClick={() => handleDelete(doc.id)}
+                  className="px-3 py-1 text-sm bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+            {summaries[doc.id] && (
+              <p className="text-sm text-gray-600 mt-2 bg-gray-50 rounded-md p-3">
+                {summaries[doc.id]}
+              </p>
+            )}
           </li>
         ))}
       </ul>

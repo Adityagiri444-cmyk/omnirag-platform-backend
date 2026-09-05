@@ -1,4 +1,6 @@
+import re
 import os
+import shutil
 from pypdf import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -7,6 +9,11 @@ from langchain_core.documents import Document
 
 UPLOADS_DIR = "uploads"
 CHROMA_DIR = "chroma_db"
+
+def clear_existing_index():
+    if os.path.exists(CHROMA_DIR):
+        shutil.rmtree(CHROMA_DIR)
+        print(f"Cleared existing index at {CHROMA_DIR}/")
 
 def extract_text_from_pdf(filepath):
     reader = PdfReader(filepath)
@@ -22,10 +29,13 @@ def load_all_documents():
             filepath = os.path.join(UPLOADS_DIR, filename)
             print(f"Extracting: {filename}")
             text = extract_text_from_pdf(filepath)
-            docs.append(Document(page_content=text, metadata={"source": filename}))
+                        # Strip the "<user_id>_" prefix so source metadata matches the DB filename
+            clean_filename = re.sub(r"^\d+_", "", filename)
+            docs.append(Document(page_content=text, metadata={"source": clean_filename}))
     return docs
 
 def build_vector_store():
+    clear_existing_index()
     raw_docs = load_all_documents()
     print(f"Loaded {len(raw_docs)} documents")
 
